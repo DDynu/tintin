@@ -1,10 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_db
-from app.friends.service import send_friend_request, accept_friend_request, get_friendships, get_pending_requests
-from app.schemas import FriendshipCreate, FriendshipOut
-from app.auth.service import create_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import AsyncSessionLocal, get_db
+from app.friends.service import (
+    accept_friend_request,
+    get_friendships,
+    get_pending_requests,
+    send_friend_request,
+)
+from app.models import User
+from app.schemas import FriendshipCreate, FriendshipOut
+from app.config import settings
+from jose import jwt, JWTError
 
 security = HTTPBearer()
 
