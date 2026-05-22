@@ -1,58 +1,37 @@
-import { io, Socket } from 'socket.io-client'
 import type { Message } from '../types'
 
-const WS_BASE = import.meta.env.VITE_WS_URL || 'http://localhost:8000'
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
 
 export class WebSocketClient {
-  private socket: Socket | null = null
-  private connected = false
-  private userId: number | null = null
+  private ws: WebSocket | null = null
+  private user_id: number
+  private onMessage: (msg: Message) => void
+  private onConnect: () => void
 
-  on(message: string, handler: (data: unknown) => void) {
-    this.socket?.on(message, handler)
+  constructor(user_id: number, onMessage: (msg: Message) => void, onConnect: () => void) {
+    this.user_id = user_id
+    this.onMessage = onMessage
+    this.onConnect = onConnect
   }
 
-  off(message: string, handler?: (data: unknown) => void) {
-    this.socket?.off(message, handler)
+  connect() {
+    this.ws = new WebSocket(`${WS_URL}?user_id=${this.user_id}`)
+    this.ws.onopen = () => this.onConnect()
+    this.ws.onmessage = (e) => {
+      const data = JSON.parse(e.data)
+      if (data.type === 'message') this.onMessage(data.message)
+    }
   }
 
-  connect(userId: number) {
-    this.userId = userId
-    this.socket = io(WS_BASE, {
-      auth: { userId: String(userId) },
-      transports: ['websocket', 'polling'],
-    })
-
-    this.socket.on('connect', () => {
-      this.connected = true
-    })
-
-    this.socket.on('message', (msg: Message) => {
-      this.socket?.emit('message_received', { messageId: msg.id, userId })
-    })
-  }
-
-  close() {
-    this.socket?.disconnect()
-    this.socket = null
-    this.connected = false
-  }
-
-  sendMessage(data: Message) {
-    this.socket?.emit('message', data)
+  sendMessage(chatId: number, content: string) {
+    this.ws?.send(JSON.stringify({ type: 'message', chat_id: chatId, content }))
   }
 
   joinChat(chatId: number) {
-    this.socket?.emit('join', { chatId })
+    this.ws?.send(JSON.stringify({ type: 'join', chat_id: chatId }))
   }
 
-  leaveChat(chatId: number) {
-    this.socket?.emit('leave', { chatId })
-  }
-
-  get isConnected() {
-    return this.connected
+  close() {
+    this.ws?.close()
   }
 }
-
-export const wsClient = new WebSocketClient()

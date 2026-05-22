@@ -2,14 +2,14 @@ export interface User {
   id: number
   username: string
   email: string
-  createdAt: string
+  created_at: string
 }
 
 export interface Message {
   id: number
   sender: User
   content: string
-  createdAt: string
+  created_at: string
 }
 
 export type ChatType = 'dm' | 'group'
@@ -18,8 +18,8 @@ export interface Chat {
   id: number
   type: ChatType
   name: string | null
-  lastMessage: string | null
-  createdAt: string
+  last_message: string | null
+  created_at: string
 }
 
 export interface ChatWithParticipants extends Chat {
@@ -53,7 +53,7 @@ export interface Friendship {
   sender: User
   receiver: User
   status: FriendshipStatus
-  createdAt: string
+  created_at: string
 }
 
 export interface ChatParticipant {
