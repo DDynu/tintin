@@ -15,7 +15,7 @@ export function useChat(chatId: number | null) {
     const userId = parseInt(JSON.parse(atob(token.split('.')[1])).sub)
     const client = new WebSocketClient(
       userId,
-      (msg) => setMessages((prev) => [...prev, msg]),
+      (msg) => setMessages((prev) => prev.findIndex((m) => m.id === msg.id) !== -1 ? prev : [...prev, msg]),
       () => client.joinChat(chatId),
     )
     client.connect()
