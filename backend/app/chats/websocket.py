@@ -1,4 +1,4 @@
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 from app.chats.service import send_message, mark_read
 from app.database import AsyncSessionLocal
 from collections import defaultdict

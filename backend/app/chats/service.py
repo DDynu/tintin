@@ -1,9 +1,9 @@
-from app.models import Chat, ChatParticipant, Message, MessageRead, ChatType, User
+from app.models import Chat, ChatParticipant, Message, MessageRead, User
 from app.auth.service import get_user_by_username
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-async def create_chat(db: AsyncSession, owner_id: int, type: ChatType, name: str | None, participant_usernames: list[str]):
+async def create_chat(db: AsyncSession, owner_id: int, type: str, name: str | None, participant_usernames: list[str]):
     chat = Chat(type=type, name=name, owner_id=owner_id)
     db.add(chat)
     await db.flush()

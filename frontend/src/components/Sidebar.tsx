@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { ChatView } from './ChatView'
+import { NewChatModal } from './NewChatModal'
 import type { Chat } from '../types'
 
 interface Props {
   chats: Chat[]
   selectedChatId: number | null
   onSelect: (id: number) => void
+  onNewChat: () => void
 }
 
-export function Sidebar({ chats, selectedChatId, onSelect }: Props) {
+export function Sidebar({ chats, selectedChatId, onSelect, onNewChat }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showNewChat, setShowNewChat] = useState(false)
 
   return (
     <div className="flex h-full bg-gray-950">
@@ -18,8 +21,14 @@ export function Sidebar({ chats, selectedChatId, onSelect }: Props) {
           mobileOpen ? 'w-full' : 'md:w-64'
         } border-r border-gray-800 flex flex-col flex-shrink-0`}
       >
-        <div className="p-4 border-b border-gray-800 font-semibold text-gray-100">
-          Chats
+        <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+          <span className="font-semibold text-gray-100">Chats</span>
+          <button
+            onClick={() => setShowNewChat(true)}
+            className="text-blue-400 hover:text-blue-300 text-sm"
+          >
+            + New
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {chats.length === 0 ? (
@@ -51,6 +60,13 @@ export function Sidebar({ chats, selectedChatId, onSelect }: Props) {
         <div className="flex-1 min-w-0">
           <ChatView chatId={selectedChatId} />
         </div>
+      )}
+      {showNewChat && (
+        <NewChatModal
+          onClose={() => setShowNewChat(false)}
+          onCreated={onNewChat}
+          refresh={onNewChat}
+        />
       )}
     </div>
   )

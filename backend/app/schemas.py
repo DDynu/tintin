@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-from app.models import FriendshipStatus, ChatType
+from typing import Literal
 
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
@@ -32,19 +32,19 @@ class FriendshipOut(BaseModel):
     id: int
     sender: UserOut
     receiver: UserOut
-    status: FriendshipStatus
+    status: str
     created_at: datetime
 
 class ChatCreate(BaseModel):
-    type: ChatType
+    type: str
     name: Optional[str] = None
     participant_usernames: List[str] = []
 
 class ChatOut(BaseModel):
     id: int
-    type: ChatType
+    type: str
     name: Optional[str]
-    last_message: Optional[str]
+    last_message: str | None = None
     created_at: datetime
 
     class Config:

@@ -31,8 +31,8 @@ export interface MessageWithChat extends Message {
 }
 
 export interface AuthResponse {
-  accessToken: string
-  tokenType: string
+  access_token: string
+  token_type: string
 }
 
 export interface RegisterRequest {

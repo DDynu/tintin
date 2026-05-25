@@ -27,8 +27,10 @@ function MainApp() {
     }
   }, [location.pathname, navigate])
 
+  const refreshChats = () => chatApi.listChats().then(setChats)
+
   useEffect(() => {
-    chatApi.listChats().then(setChats)
+    refreshChats()
   }, [])
 
   return (
@@ -41,6 +43,7 @@ function MainApp() {
               chats={chats}
               selectedChatId={selectedChatId}
               onSelect={setSelectedChatId}
+              onNewChat={refreshChats}
             />
           </ProtectedRoute>
         }

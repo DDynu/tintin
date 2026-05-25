@@ -1,5 +1,5 @@
 from app.database import get_db
-from app.models import Friendship, FriendshipStatus, User, Chat, ChatParticipant, ChatType
+from app.models import Friendship, User, Chat, ChatParticipant
 from app.auth.service import get_user_by_username
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,10 +25,10 @@ async def send_friend_request(db: AsyncSession, sender_id: int, target_username:
 
 async def accept_friend_request(db: AsyncSession, receiver_id: int, request_id: int):
     req = await db.get(Friendship, request_id)
-    if not req or req.receiver_id != receiver_id or req.status != FriendshipStatus.pending:
+    if not req or req.receiver_id != receiver_id or req.status != "pending":
         return None, "Invalid request"
 
-    req.status = FriendshipStatus.accepted
+    req.status = "accepted"
     await db.commit()
     return req, None
 
@@ -45,7 +45,7 @@ async def get_pending_requests(db: AsyncSession, user_id: int):
     result = await db.execute(
         select(Friendship).where(
             (Friendship.receiver_id == user_id) &
-            (Friendship.status == FriendshipStatus.pending)
+            (Friendship.status == "pending")
         )
     )
     return result.scalars().all()

@@ -15,7 +15,7 @@ export function useAuth() {
   const login = useMutation({
     mutationFn: authApi.login,
     onSuccess: (res) => {
-      localStorage.setItem('token', res.accessToken)
+      localStorage.setItem('token', res.access_token)
       queryClient.invalidateQueries({ queryKey: CURRENT_USER_KEY })
     },
   })
@@ -23,7 +23,7 @@ export function useAuth() {
   const register = useMutation({
     mutationFn: authApi.register,
     onSuccess: (res) => {
-      localStorage.setItem('token', res.accessToken)
+      localStorage.setItem('token', res.access_token)
     },
   })
 

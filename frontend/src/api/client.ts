@@ -14,7 +14,7 @@ import type {
   RegisterRequest,
 } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
 
 function createClient(): AxiosInstance {
   const instance = axios.create({
@@ -50,7 +50,7 @@ export const authApi = {
 }
 
 export const chatApi = {
-  createChat(data: ChatCreateRequest): Promise<ChatWithParticipants> {
+  createChat(data: ChatCreateRequest): Promise<Chat[]> {
     return client.post('/chats/', data).then(res => res.data)
   },
 

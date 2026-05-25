@@ -33,23 +33,23 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 router = APIRouter(prefix="/friends", tags=["friends"])
 
 @router.post("/request", response_model=FriendshipOut)
-async def create_request(data: FriendshipCreate, db: AsyncSession = Depends(get_db), user_id: int = Depends(get_current_user)):
-    req, err = await send_friend_request(db, user_id, data.target_username)
+async def create_request(data: FriendshipCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    req, err = await send_friend_request(db, user.id, data.target_username)
     if err:
         raise HTTPException(400, err)
     return req
 
 @router.post("/request/{request_id}/accept")
-async def accept_request(request_id: int, db: AsyncSession = Depends(get_db), user_id: int = Depends(get_current_user)):
-    req, err = await accept_friend_request(db, user_id, request_id)
+async def accept_request(request_id: int, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    req, err = await accept_friend_request(db, user.id, request_id)
     if err:
         raise HTTPException(400, err)
     return {"status": "accepted"}
 
 @router.get("/")
-async def list_friendships(db: AsyncSession = Depends(get_db), user_id: int = Depends(get_current_user)):
-    return await get_friendships(db, user_id)
+async def list_friendships(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    return await get_friendships(db, user.id)
 
 @router.get("/pending")
-async def get_pending(db: AsyncSession = Depends(get_db), user_id: int = Depends(get_current_user)):
-    return await get_pending_requests(db, user_id)
+async def get_pending(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    return await get_pending_requests(db, user.id)

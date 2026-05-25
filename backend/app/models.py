@@ -1,19 +1,9 @@
 from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship, DeclarativeBase
-import enum
 import datetime
 
 class Base(DeclarativeBase):
     pass
-
-class FriendshipStatus(str, enum.Enum):
-    pending = "pending"
-    accepted = "accepted"
-    blocked = "blocked"
-
-class ChatType(str, enum.Enum):
-    dm = "dm"
-    group = "group"
 
 class User(Base):
     __tablename__ = "users"
@@ -36,7 +26,7 @@ class Friendship(Base):
     id = Column(BigInteger, primary_key=True)
     sender_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     receiver_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(FriendshipStatus), default=FriendshipStatus.pending)
+    status = Column(String(20), default="pending")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -47,7 +37,7 @@ class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(BigInteger, primary_key=True)
-    type = Column(Enum(ChatType), nullable=False)
+    type = Column(String(10), nullable=False)
     name = Column(String(100), nullable=True)
     owner_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -76,6 +66,7 @@ class Message(Base):
 
     chat = relationship("Chat", back_populates="messages")
     sender = relationship("User", back_populates="messages")
+    read_receipts = relationship("MessageRead", back_populates="message")
 
 class MessageRead(Base):
     __tablename__ = "message_reads"
