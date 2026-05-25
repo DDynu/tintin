@@ -2,7 +2,6 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import type {
   AuthResponse,
   ChatCreateRequest,
-  ChatWithParticipants,
   Chat,
   Friendship,
   FriendshipCreateRequest,
@@ -29,6 +28,17 @@ function createClient(): AxiosInstance {
     }
     return config
   })
+
+  instance.interceptors.response.use(
+    (res) => res,
+    (err) => {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
+      return Promise.reject(err)
+    },
+  )
 
   return instance
 }
@@ -80,7 +90,7 @@ export const friendsApi = {
     return client.get('/friends/').then(res => res.data)
   },
 
-  getPending(): Promise<FriendRequest[]> {
+  getPending(): Promise<Friendship[]> {
     return client.get('/friends/pending').then(res => res.data)
   },
 }

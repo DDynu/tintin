@@ -22,52 +22,56 @@ export function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-gray-900 rounded-lg p-6 shadow-lg"
-      >
-        <h1 className="text-2xl font-bold mb-6">Register</h1>
-        {error && (
-          <p className="text-red-400 text-sm mb-4">{error}</p>
-        )}
-        <div className="space-y-4">
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Username"
-          />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Email"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Password"
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white rounded-lg py-2 hover:bg-blue-600 disabled:opacity-50"
-            disabled={register.isPending}
-          >
-            {register.isPending ? 'Registering...' : 'Register'}
-          </button>
+    <div className="min-h-screen bg-bg-deep flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold text-text-primary">Create account</h1>
+          <p className="text-sm text-text-dim mt-2">Join the conversation</p>
         </div>
-        <p className="text-sm text-gray-500 mt-4 text-center">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-400 hover:underline">
-            Login
-          </a>
-        </p>
-      </form>
+
+        <form onSubmit={handleSubmit} className="bg-bg-base border border-border rounded-2xl p-6
+          shadow-lg shadow-black/20">
+          {error && (
+            <p className="text-xs text-red-400 mb-4">{error}</p>
+          )}
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full bg-bg-surface text-text-primary rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40 placeholder-text-dim"
+              placeholder="Username"
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-bg-surface text-text-primary rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40 placeholder-text-dim"
+              placeholder="Email"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-bg-surface text-text-primary rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40 placeholder-text-dim"
+              placeholder="Password"
+            />
+            <button
+              type="submit"
+              className="w-full py-3 bg-amber text-bg-base text-sm font-medium rounded-xl hover:bg-amber-glow transition-colors disabled:opacity-30 active:scale-[0.98]"
+              disabled={register.isPending}
+            >
+              {register.isPending ? 'Creating...' : 'Create account'}
+            </button>
+          </div>
+          <p className="text-xs text-text-dim mt-5 text-center">
+            Already have an account?{' '}
+            <a href="/login" className="text-amber hover:underline">
+              Sign in
+            </a>
+          </p>
+        </form>
+      </div>
     </div>
   )
 }

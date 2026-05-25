@@ -1,15 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocation } from 'react-router-dom'
 import { authApi } from '../api/client'
-import type { User } from '../types'
 
 const CURRENT_USER_KEY = ['user']
 
 export function useAuth() {
   const queryClient = useQueryClient()
+  const location = useLocation()
 
   const currentUser = useQuery({
     queryKey: CURRENT_USER_KEY,
     queryFn: authApi.me,
+    enabled: !['/login', '/register'].includes(location.pathname),
   })
 
   const login = useMutation({
