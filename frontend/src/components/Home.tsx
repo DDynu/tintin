@@ -1,15 +1,7 @@
-import { useState, useEffect } from 'react'
-import { chatApi } from '../api/client'
 import { useApp } from '../App'
-import type { Chat } from '../types'
 
 export function Home() {
   const { showSidebar, setShowSidebar } = useApp()
-  const [chats, setChats] = useState<Chat[]>([])
-
-  useEffect(() => {
-    chatApi.listChats().then(setChats)
-  }, []);
 
   return (
     <div className="h-full w-full">
@@ -25,8 +17,6 @@ export function Home() {
         </button>
         <span className="text-sm font-medium text-text-primary">Messages</span>
       </div>
-
-      {/* Chat list */}
     </div>
   )
 }
