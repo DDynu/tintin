@@ -19,8 +19,7 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
   return (
     <>
       <div className="w-72 h-full bg-bg-base border-r border-border flex flex-col shrink-0
-        fixed top-0 left-0 bottom-0 z-50 -translate-x-full md:relative md:translate-x-0
-        transition-transform duration-200 ease-out">
+        md:relative md:z-0">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-border">
           <div className="flex items-center justify-between mb-5">
