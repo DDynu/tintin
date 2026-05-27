@@ -9,5 +9,7 @@ cd "$(dirname "$0")"
 # Source the venv
 source ./.venv/bin/activate
 
+docker compose up -d
+
 # Start uvicorn on port 8001
 exec uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
