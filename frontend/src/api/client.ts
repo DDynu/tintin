@@ -60,7 +60,7 @@ export const authApi = {
 }
 
 export const chatApi = {
-  createChat(data: ChatCreateRequest): Promise<Chat[]> {
+  createChat(data: ChatCreateRequest): Promise<Chat> {
     return client.post('/chats/', data).then(res => res.data)
   },
 

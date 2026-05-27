@@ -7,6 +7,7 @@ import { Register } from './components/Register'
 import { Home } from './components/Home'
 import { ChatView } from './components/ChatView'
 import { Sidebar } from './components/Sidebar'
+import { NewChatModal } from './components/NewChatModal'
 import type { Chat } from './types'
 
 interface AppContext {
@@ -58,6 +59,8 @@ function MainLayout() {
   const location = useLocation()
   const isChatView = location.pathname.startsWith('/chat/')
   const [chats, setChats] = useState<Chat[]>([])
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
+  const [showNewChat, setShowNewChat] = useState(false)
 
   useEffect(() => {
     chatApi.listChats().then(setChats)
@@ -78,9 +81,9 @@ function MainLayout() {
           >
             <Sidebar
               chats={chats}
-              selectedChatId={null}
-              onSelect={() => {}}
-              isNewChat={() => {}}
+              selectedChatId={selectedChatId}
+              onSelect={setSelectedChatId}
+              isNewChat={() => setShowNewChat(true)}
             />
           </div>
 
@@ -98,6 +101,15 @@ function MainLayout() {
       <div className="flex-1 h-full">
         <Outlet />
       </div>
+
+      {/* Floating modal */}
+      {showNewChat && (
+        <NewChatModal
+          onClose={() => setShowNewChat(false)}
+          onCreated={() => {}}
+          refresh={() => {}}
+        />
+      )}
     </div>
   )
 }

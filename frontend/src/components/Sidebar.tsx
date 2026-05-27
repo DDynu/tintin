@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { NewChatModal } from './NewChatModal'
 import type { Chat } from '../types'
 
 interface Props {
@@ -12,7 +11,6 @@ interface Props {
 }
 
 export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
-  const [showNewChat, setShowNewChat] = useState(false)
   const { logout, currentUser } = useAuth()
   const user = currentUser.data
 
@@ -50,7 +48,7 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
             <div className="flex flex-col items-center justify-center h-full text-text-dim gap-2 px-6">
               <div className="text-xs uppercase tracking-widest">No conversations yet</div>
               <button
-                onClick={() => setShowNewChat(true)}
+                onClick={() => isNewChat?.()}
                 className="text-amber text-sm hover:underline"
               >
                 Start one
@@ -105,13 +103,6 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
           </button>
         </div>
       </div>
-      {showNewChat && (
-        <NewChatModal
-          onClose={() => setShowNewChat(false)}
-          onCreated={() => {}}
-          refresh={() => {}}
-        />
-      )}
     </>
   )
 }
