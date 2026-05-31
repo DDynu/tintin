@@ -9,6 +9,7 @@ export function ChatView() {
   const chatId = id ? parseInt(id) : 0
   const { showSidebar, setShowSidebar } = useApp()
   const { messages, sendMessage } = useChat(chatId)
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -24,7 +25,9 @@ export function ChatView() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    sendMessage(input)
+    const id = Math.floor(Math.random() * 1e9)
+    setPendingIds(prev => new Set(prev).add(id))
+    sendMessage(input, String(id))
     setInput('')
   }
 
@@ -71,6 +74,7 @@ export function ChatView() {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
+                isPending={pendingIds.has(msg.id)}
               />
             ))}
           </div>

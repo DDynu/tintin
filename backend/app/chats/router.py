@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.chats.service import create_chat, get_user_chats, send_message, get_chat_messages
 from app.schemas import ChatCreate, ChatOut, MessageCreate, MessageOut
+from pydantic import TypeAdapter
 from app.auth.service import get_current_user
 from app.models import User
 
@@ -10,7 +11,8 @@ router = APIRouter(prefix="/chats", tags=["chats"])
 
 @router.post("/", response_model=ChatOut)
 async def create(data: ChatCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    return await create_chat(db, user.id, data.type, data.name, data.participant_usernames)
+    chat = await create_chat(db, user.id, data.type, data.name, data.participant_usernames)
+    return TypeAdapter(ChatOut).dump_python(chat)
 
 @router.get("/", response_model=list[ChatOut])
 async def list_chats(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
@@ -18,8 +20,10 @@ async def list_chats(db: AsyncSession = Depends(get_db), user: User = Depends(ge
 
 @router.get("/{chat_id}/messages")
 async def get_messages(chat_id: int, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    return await get_chat_messages(db, chat_id)
+    msgs = await get_chat_messages(db, chat_id)
+    return TypeAdapter(list[MessageOut]).dump_python(msgs)
 
 @router.post("/{chat_id}/messages")
 async def post_message(chat_id: int, data: MessageCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    return await send_message(db, chat_id, user.id, data.content)
+    msg = await send_message(db, chat_id, user.id, data.content)
+    return TypeAdapter(MessageOut).dump_python(msg)

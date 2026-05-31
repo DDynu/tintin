@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { Link } from 'react-router-dom'
 import type { Chat } from '../types'
 
 interface Props {
@@ -23,7 +22,7 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
           <div className="flex items-center justify-between mb-5">
             <span className="text-sm font-semibold tracking-widest text-text-dim uppercase">Messages</span>
             <button
-              onClick={() => isNewChat?.() || setShowNewChat(true)}
+              onClick={() => isNewChat?.()}
               className="w-7 h-7 rounded-md bg-bg-hover text-amber text-sm font-medium hover:bg-bg-card transition-colors flex items-center justify-center"
             >
               +

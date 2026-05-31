@@ -4,7 +4,7 @@ export function Home() {
   const { showSidebar, setShowSidebar } = useApp()
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full flex flex-col">
       {/* Mobile header */}
       <div className="md:hidden h-14 border-b border-border bg-bg-base/80 backdrop-blur-sm px-4 flex items-center gap-3 shrink-0">
         <button
@@ -16,6 +16,12 @@ export function Home() {
           </svg>
         </button>
         <span className="text-sm font-medium text-text-primary">Messages</span>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-text-dim">
+          <div className="text-xs uppercase tracking-widest">Select a conversation</div>
+        </div>
       </div>
     </div>
   )

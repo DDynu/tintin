@@ -23,8 +23,8 @@ export class WebSocketClient {
     }
   }
 
-  sendMessage(chatId: number, content: string) {
-    this.ws?.send(JSON.stringify({ type: 'message', chat_id: chatId, content }))
+  sendMessage(chatId: number, content: string, id?: string) {
+    this.ws?.send(JSON.stringify({ type: 'message', chat_id: chatId, content, id }))
   }
 
   joinChat(chatId: number) {

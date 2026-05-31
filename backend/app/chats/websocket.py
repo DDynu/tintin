@@ -41,7 +41,17 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                     msg = await send_message(db, data["chat_id"], user_id, data["content"])
                     await manager.broadcast(data["chat_id"], {
                         "type": "message",
-                        "message": msg,
+                        "message": {
+                            "id": int(data.get("id") or msg.id),
+                            "sender": {
+                                "id": user_id,
+                                "username": msg.sender.username,
+                                "email": msg.sender.email,
+                                "created_at": msg.sender.created_at.isoformat(),
+                            },
+                            "content": msg.content,
+                            "created_at": msg.created_at.isoformat(),
+                        },
                     })
             elif data["type"] == "read":
                 async with AsyncSessionLocal() as db:

@@ -7,6 +7,7 @@ export function useChat(chatId: number | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [ws, setWs] = useState<WebSocketClient | null>(null)
   const prevChatId = useRef<number | null>(null)
+  const seenIds = useRef<Set<number>>(new Set())
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -15,7 +16,11 @@ export function useChat(chatId: number | null) {
     const userId = parseInt(JSON.parse(atob(token.split('.')[1])).sub)
     const client = new WebSocketClient(
       userId,
-      (msg) => setMessages((prev) => prev.findIndex((m) => m.id === msg.id) !== -1 ? prev : [...prev, msg]),
+      (msg) => {
+        if (seenIds.current.has(msg.id)) return
+        seenIds.current.add(msg.id)
+        setMessages((prev) => [...prev, msg])
+      },
       () => client.joinChat(chatId),
     )
     client.connect()
@@ -25,14 +30,18 @@ export function useChat(chatId: number | null) {
 
   useEffect(() => {
     if (chatId && chatId !== prevChatId.current) {
-      chatApi.getMessages(chatId).then((data) => setMessages(data.reverse()))
+      chatApi.getMessages(chatId).then((data) => {
+        const reversed = data.reverse()
+        seenIds.current = new Set(reversed.map(m => m.id))
+        setMessages(reversed)
+      })
       prevChatId.current = chatId
     }
   }, [chatId])
 
   const sendMessage = useCallback(
-    (content: string) => {
-      ws?.sendMessage(chatId!, content)
+    (content: string, id?: string) => {
+      ws?.sendMessage(chatId!, content, id)
     },
     [ws, chatId],
   )

@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, type ReactNode, useEffect } from 'react'
+import { useState, createContext, useContext, type ReactNode, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { chatApi } from './api/client'
@@ -62,9 +62,13 @@ function MainLayout() {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [showNewChat, setShowNewChat] = useState(false)
 
-  useEffect(() => {
+  const refreshChats = useCallback(() => {
     chatApi.listChats().then(setChats)
   }, [])
+
+  useEffect(() => {
+    refreshChats()
+  }, [refreshChats])
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -106,8 +110,8 @@ function MainLayout() {
       {showNewChat && (
         <NewChatModal
           onClose={() => setShowNewChat(false)}
-          onCreated={() => {}}
-          refresh={() => {}}
+          onCreated={refreshChats}
+          refresh={refreshChats}
         />
       )}
     </div>
