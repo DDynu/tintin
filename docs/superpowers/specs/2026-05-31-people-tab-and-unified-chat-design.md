@@ -23,6 +23,11 @@ Remove the friendship system and replace it with a "People" tab that lets any us
 **`POST /chats/dm/{username}` behavior:**
 - If a chat already exists between the two users, return the existing chat
 - Otherwise create a new DM chat with both users as participants
+- Return 404 if username not found
+
+**`GET /users` behavior:**
+- Return list of all users excluding the current authenticated user
+- No pagination needed (small user base)
 
 ### New Frontend Components
 
