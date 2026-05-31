@@ -204,8 +204,7 @@ git commit -m "feat: add POST /chats/dm/{username} endpoint"
 ## Task 4: Add Users API to Frontend
 
 **Files:**
-- Modify: `frontend/src/api/client.ts` — add usersApi
-- Modify: `frontend/src/types/index.ts` — add UserOut type
+- Modify: `frontend/src/api/client.ts` — add usersApi (uses existing `User` type)
 
 - [ ] **Step 1: Add usersApi to api/client.ts**
 
@@ -334,7 +333,7 @@ export function NewChatModal({ onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [participants, setParticipants] = useState('')
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<string | undefined>()
   const [loading, setLoading] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
