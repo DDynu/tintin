@@ -84,7 +84,7 @@ git commit -m "chore: remove friends module"
 
 **Files:**
 - Modify: `backend/app/auth/service.py` — add `get_all_users` function
-- Modify: `backend/app/auth/router.py` — add `/users` endpoint
+- Modify: `backend/app/auth/router.py` — add `/users` endpoint with TypeAdapter serialization
 
 - [ ] **Step 1: Add get_all_users to auth/service.py**
 
@@ -98,14 +98,19 @@ async def get_all_users(db: AsyncSession, exclude_user_id: int) -> list[User]:
 
 - [ ] **Step 2: Add GET /users endpoint to auth/router.py**
 
-Add after existing endpoints:
+Add after existing endpoints (use TypeAdapter for ISO datetime serialization, matching existing pattern in chats router):
 
 ```python
+from pydantic import TypeAdapter
+from app.schemas import UserOut
+
 @router.get("/users")
 async def list_users(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     users = await get_all_users(db, user.id)
-    return users
+    return TypeAdapter(list[UserOut]).dump_python(users)
 ```
+
+Note: `UserOut` schema already exists in `schemas.py` (lines 19-26) with `from_attributes = True`, matching the User ORM model shape.
 
 - [ ] **Step 3: Commit**
 
@@ -124,7 +129,16 @@ git commit -m "feat: add GET /users endpoint"
 
 - [ ] **Step 1: Add create_dm_chat to chats/service.py**
 
-Add before `get_user_chats`:
+First, add `get_user_by_username` to the import on line 1:
+
+```python
+from app.models import Chat, ChatParticipant, Message, MessageRead, User
+from app.auth.service import get_user_by_username  # ADD THIS LINE
+from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import AsyncSession
+```
+
+Then add before `get_user_chats`:
 
 ```python
 async def create_dm_chat(db: AsyncSession, owner_id: int, other_username: str):
@@ -193,30 +207,19 @@ git commit -m "feat: add POST /chats/dm/{username} endpoint"
 - Modify: `frontend/src/api/client.ts` — add usersApi
 - Modify: `frontend/src/types/index.ts` — add UserOut type
 
-- [ ] **Step 1: Add UserOut type to types/index.ts**
-
-Add after the existing User interface:
-
-```typescript
-export interface UserOut {
-  id: number
-  username: string
-  email: string
-  created_at: string
-}
-```
-
-- [ ] **Step 2: Add usersApi to api/client.ts**
+- [ ] **Step 1: Add usersApi to api/client.ts**
 
 Add after the authApi export (before chatApi):
 
 ```typescript
 export const usersApi = {
-  listUsers(): Promise<UserOut[]> {
+  listUsers(): Promise<User[]> {
     return client.get('/users').then(res => res.data)
   },
 }
 ```
+
+Uses the existing `User` interface from `types/index.ts` (already has `id`, `username`, `email`, `created_at`).
 
 - [ ] **Step 3: Commit**
 
@@ -238,11 +241,11 @@ git commit -m "feat: add usersApi to frontend"
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { usersApi } from '../api/client'
-import type { UserOut } from '../types'
+import type { User } from '../types'
 
 interface Props {
   onStartChat: (username: string) => void
-  currentUser: UserOut
+  currentUser: User
 }
 
 export function People({ onStartChat, currentUser }: Props) {
@@ -331,7 +334,7 @@ export function NewChatModal({ onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [participants, setParticipants] = useState('')
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -515,7 +518,7 @@ git commit -m "feat: refactor NewChatModal to DM and Group tabs"
 ## Task 7: Add People Tab to Sidebar
 
 **Files:**
-- Modify: `frontend/src/components/Sidebar.tsx` — add People tab toggle
+- Modify: `frontend/src/components/Sidebar.tsx` — add People tab toggle and search
 
 - [ ] **Step 1: Rewrite Sidebar.tsx**
 
@@ -526,7 +529,6 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { usersApi } from '../api/client'
 import type { Chat } from '../types'
-import type { UserOut } from '../types'
 
 interface Props {
   chats: Chat[]
@@ -540,8 +542,9 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat, onStartDm 
   const { logout, currentUser } = useAuth()
   const user = currentUser.data
   const [tab, setTab] = useState<'chats' | 'people'>('chats')
+  const [peopleSearch, setPeopleSearch] = useState('')
 
-  const { data: people = [] } = useQuery({
+  const { data: people = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: usersApi.listUsers,
   })
@@ -646,27 +649,41 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat, onStartDm 
             )
           ) : (
             <div className="p-3">
-              {people.length === 0 ? (
-                <div className="text-xs text-text-dim text-center py-8">No users found</div>
+              {isLoading ? (
+                <div className="text-xs text-text-dim text-center py-8">Loading...</div>
               ) : (
-                <div className="space-y-1">
-                  {people.map(person => (
-                    <button
-                      key={person.id}
-                      onClick={() => onStartDm(person.username)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-bg-hover/50 transition-colors text-left"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center
-                        text-bg-base font-bold text-sm shrink-0">
-                        {person.username[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm text-text-primary truncate">{person.username}</div>
-                        <div className="text-xs text-text-dim truncate">{person.email}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <input
+                    type="text"
+                    value={peopleSearch}
+                    onChange={(e) => setPeopleSearch(e.target.value)}
+                    className="w-full bg-bg-surface text-text-primary rounded-lg px-3.5 py-2.5 text-sm
+                      focus:outline-none focus:ring-1 focus:ring-border placeholder-text-dim mb-3"
+                    placeholder="Search users..."
+                  />
+                  {people.filter(p => p.username.toLowerCase().includes(peopleSearch.toLowerCase())).length === 0 ? (
+                    <div className="text-xs text-text-dim text-center py-8">No users found</div>
+                  ) : (
+                    <div className="space-y-1">
+                      {people.filter(p => p.username.toLowerCase().includes(peopleSearch.toLowerCase())).map(person => (
+                        <button
+                          key={person.id}
+                          onClick={() => onStartDm(person.username)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-bg-hover/50 transition-colors text-left"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center
+                            text-bg-base font-bold text-sm shrink-0">
+                            {person.username[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-text-primary truncate">{person.username}</div>
+                            <div className="text-xs text-text-dim truncate">{person.email}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -715,14 +732,12 @@ In MainLayout, add:
 ```typescript
 const navigate = useNavigate()
 const [showNewChat, setShowNewChat] = useState(false)
-const pendingDmUser = useRef<string | null>(null)
 ```
 
 Add `onStartDm` handler:
 
 ```typescript
 const handleStartDm = useCallback((username: string) => {
-  pendingDmUser.current = username
   setShowNewChat(true)
 }, [])
 ```
@@ -744,20 +759,16 @@ Update NewChatModal:
 ```typescript
 {showNewChat && (
   <NewChatModal
-    onClose={() => { setShowNewChat(false); pendingDmUser.current = null }}
+    onClose={() => setShowNewChat(false)}
     onCreated={(chat) => {
       refreshChats()
-      if (pendingDmUser.current) {
-        pendingDmUser.current = null
-        return
-      }
       navigate(`/chat/${chat.id}`)
     }}
   />
 )}
 ```
 
-Design note: `NewChatModal.onCreated` receives a `Chat` object. For DMs started from People tab, `pendingDmUser.current` is set so the parent skips navigation (the new chat will appear in the list). For groups, the parent navigates to the new chat.
+Design note: `NewChatModal.onCreated` receives a `Chat` object. For both DMs and groups, the parent refreshes the chat list and navigates to the new chat.
 
 - [ ] **Step 2: Commit**
 
