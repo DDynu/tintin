@@ -75,6 +75,26 @@ export const chatApi = {
   postMessage(chatId: number, data: MessageCreateRequest): Promise<Message> {
     return client.post(`/chats/${chatId}/messages`, data).then(res => res.data)
   },
+
+  getParticipants(chatId: number): Promise<User[]> {
+    return client.get(`/chats/${chatId}/participants`).then(res => res.data)
+  },
+
+  updateChatName(chatId: number, name: string): Promise<Chat> {
+    return client.patch(`/chats/${chatId}/name`, { name }).then(res => res.data)
+  },
+
+  addParticipants(chatId: number, usernames: string[]): Promise<Chat> {
+    return client.post(`/chats/${chatId}/participants/add`, { usernames }).then(res => res.data)
+  },
+
+  removeParticipant(chatId: number, userId: number): Promise<Chat> {
+    return client.delete(`/chats/${chatId}/participants/${userId}`).then(res => res.data)
+  },
+
+  deleteChat(chatId: number): Promise<void> {
+    return client.delete(`/chats/${chatId}`).then(res => res.data)
+  },
 }
 
 export const friendsApi = {

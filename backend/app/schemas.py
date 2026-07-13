@@ -45,7 +45,9 @@ class ChatOut(BaseModel):
     type: str
     name: Optional[str]
     last_message: str | None = None
+    owner_id: int
     created_at: datetime
+    participants: List[UserOut] = []
 
     class Config:
         from_attributes = True
@@ -61,3 +63,9 @@ class MessageOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ChatNameUpdate(BaseModel):
+    name: str
+
+class ChatParticipantsUpdate(BaseModel):
+    usernames: List[str]

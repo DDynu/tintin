@@ -1,18 +1,43 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChat } from '../hooks/useChat'
+import { chatApi } from '../api/client'
 import { MessageBubble } from './MessageBubble'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
+import type { Chat } from '../types'
 
-export function ChatView() {
+interface ChatViewProps {
+  refreshChats?: () => void
+}
+
+export function ChatView({ refreshChats }: ChatViewProps) {
   const { id } = useParams<{ id: string }>()
   const chatId = id ? parseInt(id) : 0
   const { showSidebar, setShowSidebar } = useApp()
   const { messages, sendMessage } = useChat(chatId)
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
   const [input, setInput] = useState('')
+  const [chat, setChat] = useState<Chat | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [newParticipant, setNewParticipant] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const loadChat = useCallback(() => {
+    if (!chatId) return
+    chatApi.listChats().then(chats => {
+      const found = chats.find(c => c.id === chatId)
+      if (found) {
+        setChat(found)
+        setEditName(found.name || '')
+      }
+    })
+  }, [chatId])
+
+  useEffect(() => {
+    loadChat()
+  }, [loadChat])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -25,10 +50,76 @@ export function ChatView() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    const id = Math.floor(Math.random() * 1e9)
-    setPendingIds(prev => new Set(prev).add(id))
-    sendMessage(input, String(id))
+    const msgId = Math.floor(Math.random() * 1e9)
+    setPendingIds(prev => new Set(prev).add(msgId))
+    sendMessage(input, String(msgId))
     setInput('')
+  }
+
+  const handleUpdateName = async () => {
+    if (!chatId || !editName.trim()) return
+    try {
+      const updated = await chatApi.updateChatName(chatId, editName.trim())
+      setChat(updated)
+      setShowEdit(false)
+    } catch (err) {
+      console.error('Failed to update name:', err)
+    }
+  }
+
+  const handleAddParticipant = async () => {
+    if (!chatId || !newParticipant.trim()) return
+    try {
+      const updated = await chatApi.addParticipants(chatId, [newParticipant.trim()])
+      setChat(updated)
+      setNewParticipant('')
+    } catch (err) {
+      console.error('Failed to add participant:', err)
+    }
+  }
+
+  const handleRemoveParticipant = async (userId: number) => {
+    if (!chatId) return
+    try {
+      const updated = await chatApi.removeParticipant(chatId, userId)
+      setChat(updated)
+    } catch (err) {
+      console.error('Failed to remove participant:', err)
+    }
+  }
+
+  function decodeJwtPayload(token: string) {
+    const parts = token.split('.')
+    if (parts.length < 2) return {}
+    const base64url = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64url + '='.repeat((4 - (base64url.length % 4)) % 4)
+    try {
+      return JSON.parse(atob(padded))
+    } catch {
+      return {}
+    }
+  }
+  const currentUserId = parseInt(decodeJwtPayload(localStorage.getItem('token') || '').sub || '0')
+  const isOwner = chat?.owner_id === currentUserId
+
+  const navigate = useNavigate()
+
+  const handleDelete = async () => {
+    if (!chatId) return
+    try {
+      await chatApi.deleteChat(chatId)
+      refreshChats?.()
+      navigate('/')
+    } catch (err) {
+      console.error('Failed to delete chat:', err)
+    }
+  }
+
+  const handleOpenEdit = () => {
+    if (chat) {
+      setEditName(chat.name || '')
+      setShowEdit(true)
+    }
   }
 
   return (
@@ -48,12 +139,47 @@ export function ChatView() {
         </button>
 
         <div className="w-8 h-8 rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-secondary font-medium">
-          #{chatId}
+          {chat?.name ? chat.name[0].toUpperCase() : chat?.type === 'dm' ? '#' : 'G'}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-text-primary truncate">Chat #{chatId}</div>
-          <div className="text-xs text-text-dim">1 member</div>
+          <div className="text-sm font-medium text-text-primary truncate">
+            {chat?.name || chat?.type === 'dm' ? 'Direct Message' : chat?.name || `Group Chat #${chatId}`}
+          </div>
+          <div className="text-xs text-text-dim">
+            {chat?.type === 'dm' ? 'Direct Message' : `${chat?.participants?.length || 0} members`}
+          </div>
         </div>
+        
+        {/* Edit & Delete buttons (only for group chats or if user is owner) */}
+        {isOwner && (
+          <>
+            {chat?.type !== 'dm' && (
+              <button
+                onClick={handleOpenEdit}
+                className="w-8 h-8 rounded-md bg-bg-hover text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center"
+                title="Edit chat"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 2h3v3l-9 9H2v-3l9-9z"/>
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                if (confirm(`Delete "${chat?.name || chat?.type}"? This cannot be undone.`)) {
+                  handleDelete()
+                }
+              }}
+              className="w-8 h-8 rounded-md bg-red-900/40 text-red-400 hover:bg-red-900/70 hover:text-red-200 transition-colors flex items-center justify-center"
+              title="Delete chat"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 5h12M6 5V3h4v2M5 5v7a1 1 0 001 1h4a1 1 0 001-1V5"/>
+                <path d="M6 7v4M10 7v4"/>
+              </svg>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Messages */}
@@ -69,7 +195,7 @@ export function ChatView() {
               <MessageBubble
                 key={msg.id}
                 content={msg.content}
-                sender={msg.sender.username}
+                sender={msg.sender?.username ?? 'Unknown'}
                 time={new Date(msg.created_at).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -104,6 +230,95 @@ export function ChatView() {
           </button>
         </div>
       </form>
+
+      {/* Edit Modal */}
+      {showEdit && chat && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-card border border-border rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-text-primary">Edit Chat</h2>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              {/* Chat Name */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  {chat.type === 'dm' ? 'Contact Name' : 'Group Name'}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 bg-bg-surface text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40"
+                    placeholder={chat.type === 'dm' ? 'Contact name' : 'Group name'}
+                  />
+                  <button
+                    onClick={handleUpdateName}
+                    className="px-4 py-2 bg-amber text-bg-base text-sm font-medium rounded-lg hover:bg-amber-glow transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              {/* Participants (only for group chats) */}
+              {chat.type !== 'dm' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Members ({chat.participants?.length || 0})
+                  </label>
+                  <div className="space-y-2 mb-3">
+                    {chat.participants?.map((participant) => (
+                      <div key={participant.id} className="flex items-center justify-between bg-bg-surface rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base text-xs font-bold">
+                            {participant.username[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm text-text-primary">{participant.username}</span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveParticipant(participant.id)}
+                          className="text-text-dim hover:text-red-400 transition-colors"
+                          title="Remove member"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                            <path d="M3 7h8M7 3v8"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <input
+                      value={newParticipant}
+                      onChange={(e) => setNewParticipant(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddParticipant()}
+                      className="flex-1 bg-bg-surface text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40"
+                      placeholder="Add by username"
+                    />
+                    <button
+                      onClick={handleAddParticipant}
+                      className="px-4 py-2 bg-amber text-bg-base text-sm font-medium rounded-lg hover:bg-amber-glow transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="px-5 py-4 border-t border-border">
+              <button
+                onClick={() => setShowEdit(false)}
+                className="w-full py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

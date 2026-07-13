@@ -13,7 +13,18 @@ export function useChat(chatId: number | null) {
     const token = localStorage.getItem('token')
     if (!token || !chatId) return
 
-    const userId = parseInt(JSON.parse(atob(token.split('.')[1])).sub)
+    function decodeJwtPayload(token: string) {
+      const parts = token.split('.')
+      if (parts.length < 2) return {}
+      const base64url = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64url + '='.repeat((4 - (base64url.length % 4)) % 4)
+      try {
+        return JSON.parse(atob(padded))
+      } catch {
+        return {}
+      }
+    }
+    const userId = parseInt(decodeJwtPayload(token).sub || '0')
     const client = new WebSocketClient(
       userId,
       (msg) => {
@@ -25,7 +36,7 @@ export function useChat(chatId: number | null) {
     )
     client.connect()
     setWs(client)
-    return () => client.close()
+    return () => { client.close() }
   }, [chatId])
 
   useEffect(() => {

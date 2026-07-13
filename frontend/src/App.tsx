@@ -33,6 +33,11 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
 export default function App() {
   const [showSidebar, setShowSidebar] = useState(false)
+  const [chats, setChats] = useState<Chat[]>([])
+
+  const refreshChats = useCallback(() => {
+    chatApi.listChats().then(setChats)
+  }, [])
 
   return (
     <Ctx.Provider value={{ showSidebar, setShowSidebar }}>
@@ -42,29 +47,24 @@ export default function App() {
         <Route
           element={
             <AuthGuard>
-              <MainLayout />
+              <MainLayout refreshChats={refreshChats} chats={chats} setChats={setChats} />
             </AuthGuard>
           }
         >
           <Route path="/" element={<Home />} />
-          <Route path="/chat/:id" element={<ChatView />} />
+          <Route path="/chat/:id" element={<ChatView refreshChats={refreshChats} />} />
         </Route>
       </Routes>
     </Ctx.Provider>
   )
 }
 
-function MainLayout() {
+function MainLayout({ refreshChats, chats, setChats }: { refreshChats: () => void; chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>> }) {
   const { showSidebar, setShowSidebar } = useApp()
   const location = useLocation()
   const isChatView = location.pathname.startsWith('/chat/')
-  const [chats, setChats] = useState<Chat[]>([])
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [showNewChat, setShowNewChat] = useState(false)
-
-  const refreshChats = useCallback(() => {
-    chatApi.listChats().then(setChats)
-  }, [])
 
   useEffect(() => {
     refreshChats()

@@ -20,6 +20,8 @@ export interface Chat {
   name: string | null
   last_message: string | null
   created_at: string
+  participants: User[]
+  owner_id: number
 }
 
 export interface ChatWithParticipants extends Chat {
