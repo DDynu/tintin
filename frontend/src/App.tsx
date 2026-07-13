@@ -59,7 +59,7 @@ export default function App() {
   )
 }
 
-function MainLayout({ refreshChats, chats, setChats }: { refreshChats: () => void; chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>> }) {
+function MainLayout({ refreshChats, chats }: { refreshChats: () => void; chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>> }) {
   const { showSidebar, setShowSidebar } = useApp()
   const location = useLocation()
   const isChatView = location.pathname.startsWith('/chat/')
