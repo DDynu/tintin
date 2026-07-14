@@ -15,8 +15,9 @@ export function Login() {
     try {
       await login.mutateAsync({ username, password })
       navigate('/')
-    } catch {
-      setError('Invalid credentials')
+    } catch (err) {
+      console.log(err)
+      setError("err: " + err)
     }
   }
 

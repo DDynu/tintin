@@ -15,7 +15,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
   const chatId = id ? parseInt(id) : 0
   const { showSidebar, setShowSidebar } = useApp()
   const { messages, sendMessage } = useChat(chatId)
-  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set())
+  const [pendingIds, setPendingIds] = useState<Set<number | void>>(new Set())
   const [input, setInput] = useState('')
   const [chat, setChat] = useState<Chat | null>(null)
   const [showEdit, setShowEdit] = useState(false)
@@ -52,8 +52,13 @@ export function ChatView({ refreshChats }: ChatViewProps) {
     if (!input.trim()) return
     const msgId = Math.floor(Math.random() * 1e9)
     setPendingIds(prev => new Set(prev).add(msgId))
-    sendMessage(input, String(msgId))
+    sendMessage(input, String(msgId)) // Hopefully message got sent, no ack for now
     setInput('')
+    setPendingIds(prev => {
+      const nextSet = new Set(prev)
+      nextSet.delete(msgId)
+      return nextSet
+    }) // delete the pending after message is sent
   }
 
   const handleUpdateName = async () => {
