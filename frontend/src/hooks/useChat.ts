@@ -5,10 +5,11 @@ import type { Message } from '../types'
 
 export function useChat(chatId: number | null) {
   const [messages, setMessages] = useState<Message[]>([])
-  const [ws, setWs] = useState<WebSocketClient | null>(null)
+  const wsClient = useRef<WebSocketClient | null>(null)
   const prevChatId = useRef<number | null>(null)
   const seenIds = useRef<Set<number>>(new Set())
 
+  // The websocket client connection
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token || !chatId) return
@@ -35,10 +36,13 @@ export function useChat(chatId: number | null) {
       () => client.joinChat(chatId),
     )
     client.connect()
-    setWs(client)
-    return () => { client.close() }
+    wsClient.current = client
+    return () => {
+      client.close()
+    }
   }, [chatId])
 
+  // Get message when entering chat
   useEffect(() => {
     if (chatId && chatId !== prevChatId.current) {
       chatApi.getMessages(chatId).then((data) => {
@@ -52,9 +56,9 @@ export function useChat(chatId: number | null) {
 
   const sendMessage = useCallback(
     (content: string, id?: string) => {
-      ws?.sendMessage(chatId!, content, id)
+      wsClient.current?.sendMessage(chatId!, content, id)
     },
-    [ws, chatId],
+    [wsClient, chatId],
   )
 
   return { messages, sendMessage }
