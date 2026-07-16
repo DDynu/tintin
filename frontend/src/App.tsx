@@ -2,8 +2,7 @@ import { useState, createContext, useContext, type ReactNode, useEffect, useCall
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { chatApi } from './api/client'
-import { Login } from './components/Login'
-import { Register } from './components/Register'
+import { Auth } from './components/Auth'
 import { Home } from './components/Home'
 import { ChatView } from './components/ChatView'
 import { Sidebar } from './components/Sidebar'
@@ -17,7 +16,7 @@ interface AppContext {
 
 const Ctx = createContext<AppContext>({
   showSidebar: false,
-  setShowSidebar: () => {},
+  setShowSidebar: () => { },
 })
 
 export function useApp() {
@@ -42,8 +41,8 @@ export default function App() {
   return (
     <Ctx.Provider value={{ showSidebar, setShowSidebar }}>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Auth isLogin />} />
+        <Route path="/register" element={<Auth isLogin={false} />} />
         <Route
           element={
             <AuthGuard>
