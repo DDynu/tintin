@@ -26,7 +26,7 @@ export function useApp() {
 function AuthGuard({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth()
   if (currentUser.isLoading) return <div className="min-h-screen bg-bg-deep text-text-primary flex items-center justify-center">Loading...</div>
-  if (!localStorage.getItem('token')) return <Navigate to="/login" replace />
+  if (!(currentUser.isSuccess && !!currentUser.data)) return <Navigate to="/login" replace />
   return <>{children}</>
 }
 
