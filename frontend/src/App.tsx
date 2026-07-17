@@ -1,12 +1,14 @@
-import { useState, createContext, useContext, type ReactNode, useEffect, useCallback } from 'react'
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from './hooks/useAuth'
+import { useState, createContext, useContext, useEffect, useCallback } from 'react'
+import { Routes, Route, Outlet, useLocation } from 'react-router-dom'
 import { chatApi } from './api/client'
 import { Auth } from './components/Auth'
 import { Home } from './components/Home'
 import { ChatView } from './components/ChatView'
 import { Sidebar } from './components/Sidebar'
 import { NewChatModal } from './components/NewChatModal'
+import { NotFound } from './components/NotFound'
+import { MiddlewareProvider } from './middleware/MiddlewareProvider'
+import { requireAuth } from './middleware/auth'
 import type { Chat } from './types'
 
 interface AppContext {
@@ -21,13 +23,6 @@ const Ctx = createContext<AppContext>({
 
 export function useApp() {
   return useContext(Ctx)
-}
-
-function AuthGuard({ children }: { children: ReactNode }) {
-  const { currentUser } = useAuth()
-  if (currentUser.isLoading) return <div className="min-h-screen bg-bg-deep text-text-primary flex items-center justify-center">Loading...</div>
-  if (!(currentUser.isSuccess && !!currentUser.data)) return <Navigate to="/login" replace />
-  return <>{children}</>
 }
 
 export default function App() {
@@ -45,14 +40,15 @@ export default function App() {
         <Route path="/register" element={<Auth isLogin={false} />} />
         <Route
           element={
-            <AuthGuard>
+            <MiddlewareProvider middleware={[requireAuth]}>
               <MainLayout refreshChats={refreshChats} chats={chats} setChats={setChats} />
-            </AuthGuard>
+            </MiddlewareProvider>
           }
         >
           <Route path="/" element={<Home />} />
           <Route path="/chat/:id" element={<ChatView refreshChats={refreshChats} />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Ctx.Provider>
   )
