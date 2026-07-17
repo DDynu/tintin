@@ -5,3 +5,7 @@ dist/
 node_modules/
 .venv/
 .worktrees/
+
+# Project docs
+docs/reviews/
+docs/superpowers/

@@ -18,8 +18,12 @@ export class WebSocketClient {
     this.ws = new WebSocket(`${WS_URL}?user_id=${this.user_id}`)
     this.ws.onopen = () => this.onConnect()
     this.ws.onmessage = (e) => {
-      const data = JSON.parse(e.data)
-      if (data.type === 'message') this.onMessage(data.message)
+      try {
+        const data = JSON.parse(e.data)
+        if (data.type === 'message') this.onMessage(data.message)
+      } catch (err) {
+        console.error('[WebSocket] Failed to parse message:', err, 'raw:', e.data)
+      }
     }
   }
 
