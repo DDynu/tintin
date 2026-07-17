@@ -18,7 +18,7 @@ export function Home() {
         <span className="text-sm font-medium text-text-primary">Messages</span>
       </div>
 
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-bg-base/60">
         <div className="flex flex-col items-center gap-2 text-text-dim">
           <div className="text-xs uppercase tracking-widest">Select a conversation</div>
         </div>
