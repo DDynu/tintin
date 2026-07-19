@@ -297,7 +297,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
                     {chat.participants?.map((participant) => (
                       <div key={participant.id} className="flex items-center justify-between bg-bg-surface rounded-lg px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base text-xs font-bold">
+                          <div className="w-6 h-6 rounded-full bg-linear-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base text-xs font-bold">
                             {participant.username[0].toUpperCase()}
                           </div>
                           <span className="text-sm text-text-primary">{participant.username}</span>
