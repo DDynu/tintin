@@ -33,6 +33,10 @@ export default function App() {
     chatApi.listChats().then(setChats)
   }, [])
 
+  const handleChatDeleted = useCallback((deletedChatId: number) => {
+    setChats(prev => prev.filter(c => c.id !== deletedChatId))
+  }, [])
+
   return (
     <Ctx.Provider value={{ showSidebar, setShowSidebar }}>
       <Routes>
@@ -46,7 +50,7 @@ export default function App() {
           }
         >
           <Route path="/" element={<Home />} />
-          <Route path="/chat/:id" element={<ChatView refreshChats={refreshChats} />} />
+          <Route path="/chat/:id" element={<ChatView refreshChats={refreshChats} onChatDeleted={handleChatDeleted} />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

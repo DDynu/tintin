@@ -27,6 +27,16 @@ class ConnectionManager:
     async def leave_chat(self, user_id: int, chat_id: int):
         self.chat_rooms[chat_id].discard(user_id)
 
+    async def broadcast_to_chat(self, chat_id: int, message: dict):
+        """Broadcast a message to all users currently in a chat room."""
+        await self.broadcast(chat_id, message)
+
+    async def send_to_user(self, user_id: int, message: dict):
+        """Send a message directly to a specific user's WebSocket connection."""
+        ws = self.connections.get(user_id)
+        if ws:
+            await ws.send_json(message)
+
 manager = ConnectionManager()
 
 async def websocket_endpoint(websocket: WebSocket, user_id: int):

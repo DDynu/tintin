@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.chats.service import create_chat, get_user_chats, send_message, get_chat_messages, get_chat_participants, update_chat_name, add_participants, remove_participant, delete_chat, ensure_self_chat, clear_chat_messages
+from app.chats.websocket import manager
 from app.schemas import ChatCreate, ChatOut, MessageCreate, MessageOut, ChatNameUpdate, ChatParticipantsUpdate, UserOut
 from pydantic import TypeAdapter
 from app.auth.service import get_current_user
@@ -78,6 +79,21 @@ async def add_part(chat_id: int, data: ChatParticipantsUpdate, db: AsyncSession 
     data_out = TypeAdapter(ChatOut).dump_python(chat)
     participants = await get_chat_participants(db, chat.id)
     data_out["participants"] = TypeAdapter(list[UserOut]).dump_python([p.user for p in participants])
+    added_users = [{"id": p.user.id, "username": p.user.username, "email": p.user.email, "created_at": p.user.created_at.isoformat()} for p in participants]
+    await manager.broadcast_to_chat(chat_id, {
+        "type": "participant_added",
+        "chat_id": chat_id,
+        "added_users": added_users,
+    })
+    # Send join instruction to each newly added user
+    from app.auth.service import get_user_by_username
+    for username in data.usernames:
+        new_user = await get_user_by_username(db, username)
+        if new_user:
+            await manager.send_to_user(new_user.id, {
+                "type": "join_chat",
+                "chat_id": chat_id,
+            })
     return data_out
 
 @router.delete("/{chat_id}/participants/{user_id}", response_model=ChatOut)
@@ -88,6 +104,11 @@ async def remove_part(chat_id: int, user_id: int, db: AsyncSession = Depends(get
     data_out = TypeAdapter(ChatOut).dump_python(chat)
     participants = await get_chat_participants(db, chat.id)
     data_out["participants"] = TypeAdapter(list[UserOut]).dump_python([p.user for p in participants])
+    await manager.broadcast_to_chat(chat_id, {
+        "type": "participant_removed",
+        "chat_id": chat_id,
+        "removed_user_id": user_id,
+    })
     return data_out
 
 @router.delete("/{chat_id}", status_code=204)
@@ -95,4 +116,9 @@ async def delete_chat_endpoint(chat_id: int, db: AsyncSession = Depends(get_db),
     chat = await delete_chat(db, chat_id, user.id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found or not authorized")
+    # Notify remaining participants that the chat has been deleted
+    await manager.broadcast_to_chat(chat_id, {
+        "type": "chat_deleted",
+        "chat_id": chat_id,
+    })
     return None
