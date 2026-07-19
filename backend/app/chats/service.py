@@ -4,8 +4,12 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-async def create_chat(db: AsyncSession, owner_id: int, type: str, name: str | None, participant_usernames: list[str]):
-    chat = Chat(type=type, name=name, owner_id=owner_id)
+CHAT_TYPE_CHAT = "chat"
+CHAT_TYPE_SELF = "self"
+
+
+async def create_chat(db: AsyncSession, owner_id: int, name: str | None, participant_usernames: list[str]):
+    chat = Chat(type=CHAT_TYPE_CHAT, name=name, owner_id=owner_id)
     db.add(chat)
     await db.flush()
 
@@ -19,6 +23,35 @@ async def create_chat(db: AsyncSession, owner_id: int, type: str, name: str | No
     await db.commit()
     await db.refresh(chat)
     return chat
+
+
+async def create_self_chat(db: AsyncSession, user_id: int):
+    """Create a self chat for the given user."""
+    chat = Chat(type=CHAT_TYPE_SELF, name="My Notes", owner_id=user_id)
+    db.add(chat)
+    await db.flush()
+
+    db.add(ChatParticipant(chat_id=chat.id, user_id=user_id))
+    await db.commit()
+    await db.refresh(chat)
+    return chat
+
+
+async def get_self_chat(db: AsyncSession, user_id: int) -> Chat | None:
+    """Get the self chat for the given user, if it exists."""
+    result = await db.execute(
+        select(Chat).where(Chat.owner_id == user_id, Chat.type == CHAT_TYPE_SELF)
+    )
+    return result.scalars().first()
+
+
+async def ensure_self_chat(db: AsyncSession, user_id: int) -> Chat:
+    """Get existing self chat or create a new one."""
+    existing = await get_self_chat(db, user_id)
+    if existing:
+        return existing
+    return await create_self_chat(db, user_id)
+
 
 async def get_user_chats(db: AsyncSession, user_id: int):
     result = await db.execute(
@@ -123,5 +156,26 @@ async def delete_chat(db: AsyncSession, chat_id: int, owner_id: int):
     )
 
     await db.delete(chat)
+    await db.commit()
+    return chat
+
+
+async def clear_chat_messages(db: AsyncSession, chat_id: int, owner_id: int):
+    """Delete all messages and read receipts for a chat (used for self chats)."""
+    result = await db.execute(select(Chat).where(Chat.id == chat_id, Chat.owner_id == owner_id))
+    chat = result.scalars().first()
+    if not chat:
+        return None
+
+    # Delete read receipts first (FK dependency)
+    await db.execute(
+        MessageRead.__table__.delete().where(MessageRead.message_id.in_(
+            select(Message.id).where(Message.chat_id == chat_id)
+        ))
+    )
+    # Delete messages
+    await db.execute(
+        Message.__table__.delete().where(Message.chat_id == chat_id)
+    )
     await db.commit()
     return chat

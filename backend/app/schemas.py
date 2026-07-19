@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-from typing import Literal
 
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
@@ -36,7 +35,6 @@ class FriendshipOut(BaseModel):
     created_at: datetime
 
 class ChatCreate(BaseModel):
-    type: str
     name: Optional[str] = None
     participant_usernames: List[str] = []
 

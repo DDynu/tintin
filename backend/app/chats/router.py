@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.chats.service import create_chat, get_user_chats, send_message, get_chat_messages, get_chat_participants, update_chat_name, add_participants, remove_participant, delete_chat
+from app.chats.service import create_chat, get_user_chats, send_message, get_chat_messages, get_chat_participants, update_chat_name, add_participants, remove_participant, delete_chat, ensure_self_chat, clear_chat_messages
 from app.schemas import ChatCreate, ChatOut, MessageCreate, MessageOut, ChatNameUpdate, ChatParticipantsUpdate, UserOut
 from pydantic import TypeAdapter
 from app.auth.service import get_current_user
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/chats", tags=["chats"])
 
 @router.post("/", response_model=ChatOut)
 async def create(data: ChatCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    chat = await create_chat(db, user.id, data.type, data.name, data.participant_usernames)
+    chat = await create_chat(db, user.id, data.name, data.participant_usernames)
     data_out = TypeAdapter(ChatOut).dump_python(chat)
     participants = await get_chat_participants(db, chat.id)
     data_out["participants"] = TypeAdapter(list[UserOut]).dump_python([p.user for p in participants])
@@ -19,6 +19,8 @@ async def create(data: ChatCreate, db: AsyncSession = Depends(get_db), user: Use
 
 @router.get("/", response_model=list[ChatOut])
 async def list_chats(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    # Ensure self chat exists before listing
+    await ensure_self_chat(db, user.id)
     chats = await get_user_chats(db, user.id)
     enriched = []
     for chat in chats:
@@ -27,6 +29,14 @@ async def list_chats(db: AsyncSession = Depends(get_db), user: User = Depends(ge
         data["participants"] = TypeAdapter(list[UserOut]).dump_python([p.user for p in participants])
         enriched.append(data)
     return enriched
+
+@router.get("/self", response_model=ChatOut)
+async def get_self_chat(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    chat = await ensure_self_chat(db, user.id)
+    data_out = TypeAdapter(ChatOut).dump_python(chat)
+    participants = await get_chat_participants(db, chat.id)
+    data_out["participants"] = TypeAdapter(list[UserOut]).dump_python([p.user for p in participants])
+    return data_out
 
 @router.get("/{chat_id}/messages")
 async def get_messages(chat_id: int, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
@@ -37,6 +47,13 @@ async def get_messages(chat_id: int, db: AsyncSession = Depends(get_db), user: U
 async def post_message(chat_id: int, data: MessageCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     msg = await send_message(db, chat_id, user.id, data.content)
     return TypeAdapter(MessageOut).dump_python(msg)
+
+@router.delete("/{chat_id}/messages", status_code=204)
+async def clear_messages(chat_id: int, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    chat = await clear_chat_messages(db, chat_id, user.id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found or not authorized")
+    return None
 
 @router.get("/{chat_id}/participants", response_model=list[UserOut])
 async def get_participants(chat_id: int, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):

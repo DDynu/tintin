@@ -9,6 +9,7 @@ from app.auth.service import (
 )
 from app.schemas import UserRegister, UserLogin, Token, UserOut
 from sqlalchemy.orm import selectinload
+from app.chats.service import create_self_chat
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -27,6 +28,9 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    # Auto-create self chat for new user
+    await create_self_chat(db, user.id)
 
     return Token(access_token=create_access_token({"sub": str(user.id)}))
 

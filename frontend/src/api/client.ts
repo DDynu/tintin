@@ -72,12 +72,20 @@ export const chatApi = {
     return client.get('/chats/').then(res => res.data)
   },
 
+  getSelfChat(): Promise<Chat> {
+    return client.get('/chats/self').then(res => res.data)
+  },
+
   getMessages(chatId: number): Promise<MessageWithChat[]> {
     return client.get(`/chats/${chatId}/messages`).then(res => res.data)
   },
 
   postMessage(chatId: number, data: MessageCreateRequest): Promise<Message> {
     return client.post(`/chats/${chatId}/messages`, data).then(res => res.data)
+  },
+
+  clearMessages(chatId: number): Promise<void> {
+    return client.delete(`/chats/${chatId}/messages`).then(res => res.data)
   },
 
   getParticipants(chatId: number): Promise<User[]> {

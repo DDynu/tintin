@@ -11,7 +11,6 @@ interface Props {
 
 export function NewChatModal({ onClose, onCreated, refresh }: Props) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'dm' | 'group'>('dm')
   const [selectedUsers, setSelectedUsers] = useState<User[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,19 +28,14 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
     e.preventDefault()
     setError('')
 
-    if (type === 'dm' && selectedUsers.length !== 1) {
-      setError('Select exactly one user for direct message')
-      return
-    }
-    if (type === 'group' && selectedUsers.length < 2) {
-      setError('Select at least 2 users for a group chat')
+    if (selectedUsers.length === 0) {
+      setError('Select at least one user')
       return
     }
 
     setLoading(true)
     try {
       await chatApi.createChat({
-        type,
         name: name || null,
         participantUsernames: selectedUsers.map(u => u.username),
       })
@@ -90,26 +84,10 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
             placeholder="Chat name (optional)"
           />
 
-          <div className="flex gap-2">
-            {(['dm', 'group'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setType(t)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${type === t
-                    ? 'bg-amber text-bg-base'
-                    : 'bg-bg-surface text-text-secondary hover:bg-bg-hover'
-                  }`}
-              >
-                {t === 'dm' ? 'Direct Message' : 'Group'}
-              </button>
-            ))}
-          </div>
-
           <UserAutocomplete
             excludeIds={[]}
             onSelectionChange={setSelectedUsers}
-            placeholder={type === 'dm' ? 'Search user...' : 'Search users...'}
+            placeholder="Search users..."
           />
 
           {error && (

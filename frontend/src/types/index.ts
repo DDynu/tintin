@@ -12,7 +12,7 @@ export interface Message {
   created_at: string
 }
 
-export type ChatType = 'dm' | 'group'
+export type ChatType = 'chat' | 'self'
 
 export interface Chat {
   id: number
@@ -68,7 +68,6 @@ export interface FriendshipCreateRequest {
 }
 
 export interface ChatCreateRequest {
-  type: ChatType
   name: string | null
   participantUsernames: string[]
 }

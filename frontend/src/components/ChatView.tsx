@@ -125,6 +125,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
 
   const currentUserId = parseInt(decodeJwtPayload(localStorage.getItem('token') || '').sub || '0') || 0
   const isOwner = chat?.owner_id === currentUserId
+  const isSelfChat = chat?.type === 'self'
 
   const navigate = useNavigate()
 
@@ -139,12 +140,40 @@ export function ChatView({ refreshChats }: ChatViewProps) {
     }
   }
 
+  const handleClearMessages = async () => {
+    if (!chatId) return
+    if (!confirm('Clear all messages in this chat? This cannot be undone.')) return
+    try {
+      await chatApi.clearMessages(chatId)
+      // Refresh messages from the API
+      const msgs = await chatApi.getMessages(chatId)
+      // Clear local messages by re-fetching
+      setMessages([])
+    } catch (err) {
+      console.error('Failed to clear messages:', err)
+    }
+  }
+
+  const [localMessages, setMessages] = useState<Message[]>([])
+  // Sync local messages with the hook's messages
+  useEffect(() => {
+    setMessages(messages)
+  }, [messages])
+
   const handleOpenEdit = () => {
     if (chat) {
       setEditName(chat.name || '')
       setShowEdit(true)
     }
   }
+
+  const chatDisplayName = isSelfChat
+    ? (chat?.name || 'My Notes')
+    : chat?.name || `Chat #${chatId}`
+
+  const chatSubtitle = isSelfChat
+    ? 'Your personal notes'
+    : `${chat?.participants?.length || 0} members`
 
   return (
     <div className="flex flex-col h-full bg-bg-deep
@@ -163,46 +192,55 @@ export function ChatView({ refreshChats }: ChatViewProps) {
         </button>
 
         <div className="w-8 h-8 rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-secondary font-medium">
-          {chat?.name ? chat.name[0].toUpperCase() : chat?.type === 'dm' ? '#' : 'G'}
+          {isSelfChat ? '📝' : chat?.name ? chat.name[0].toUpperCase() : '#'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-text-primary truncate">
-            {chat?.name || chat?.type === 'dm' ? 'Direct Message' : chat?.name || `Group Chat #${chatId}`}
+            {chatDisplayName}
           </div>
           <div className="text-xs text-text-dim">
-            {chat?.type === 'dm' ? 'Direct Message' : `${chat?.participants?.length || 0} members`}
+            {chatSubtitle}
           </div>
         </div>
         
-        {/* Edit & Delete buttons (only for group chats or if user is owner) */}
-        {isOwner && (
-          <>
-            {chat?.type !== 'dm' && (
-              <button
-                onClick={handleOpenEdit}
-                className="w-8 h-8 rounded-md bg-bg-hover text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center"
-                title="Edit chat"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 2h3v3l-9 9H2v-3l9-9z"/>
-                </svg>
-              </button>
-            )}
-            <button
-              onClick={() => {
-                if (confirm(`Delete "${chat?.name || chat?.type}"? This cannot be undone.`)) {
-                  handleDelete()
-                }
-              }}
-              className="w-8 h-8 rounded-md bg-red-900/40 text-red-400 hover:bg-red-900/70 hover:text-red-200 transition-colors flex items-center justify-center"
-              title="Delete chat"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 5h12M6 5V3h4v2M5 5v7a1 1 0 001 1h4a1 1 0 001-1V5"/>
-                <path d="M6 7v4M10 7v4"/>
-              </svg>
-            </button>
-          </>
+        {/* Edit & Delete buttons (only for chats the user owns) */}
+        {isOwner && !isSelfChat && (
+          <button
+            onClick={handleOpenEdit}
+            className="w-8 h-8 rounded-md bg-bg-hover text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center"
+            title="Edit chat"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 2h3v3l-9 9H2v-3l9-9z"/>
+            </svg>
+          </button>
+        )}
+        {isSelfChat && (
+          <button
+            onClick={handleClearMessages}
+            className="w-8 h-8 rounded-md bg-bg-hover text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center"
+            title="Clear messages"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 5h12M6 5V3h4v2"/>
+            </svg>
+          </button>
+        )}
+        {isOwner && !isSelfChat && (
+          <button
+            onClick={() => {
+              if (confirm(`Delete "${chatDisplayName}"? This cannot be undone.`)) {
+                handleDelete()
+              }
+            }}
+            className="w-8 h-8 rounded-md bg-red-900/40 text-red-400 hover:bg-red-900/70 hover:text-red-200 transition-colors flex items-center justify-center"
+            title="Delete chat"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 5h12M6 5V3h4v2M5 5v7a1 1 0 001 1h4a1 1 0 001-1V5"/>
+              <path d="M6 7v4M10 7v4"/>
+            </svg>
+          </button>
         )}
       </div>
 
@@ -211,7 +249,9 @@ export function ChatView({ refreshChats }: ChatViewProps) {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-dim gap-2">
             <div className="text-xs uppercase tracking-widest">No messages yet</div>
-            <div className="text-xs">Send the first message to start the conversation</div>
+            <div className="text-xs">
+              {isSelfChat ? 'Start taking notes' : 'Send the first message to start the conversation'}
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -247,7 +287,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 bg-bg-surface text-text-primary rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40 placeholder-text-dim transition-colors"
-            placeholder="Type a message..."
+            placeholder={isSelfChat ? 'Take a note...' : 'Type a message...'}
           />
           <button
             type="submit"
@@ -271,14 +311,14 @@ export function ChatView({ refreshChats }: ChatViewProps) {
               {/* Chat Name */}
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
-                  {chat.type === 'dm' ? 'Contact Name' : 'Group Name'}
+                  Chat Name
                 </label>
                 <div className="flex gap-2">
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="flex-1 bg-bg-surface text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40"
-                    placeholder={chat.type === 'dm' ? 'Contact name' : 'Group name'}
+                    placeholder="Chat name"
                   />
                   <button
                     onClick={handleUpdateName}
@@ -289,8 +329,8 @@ export function ChatView({ refreshChats }: ChatViewProps) {
                 </div>
               </div>
 
-              {/* Participants (only for group chats) */}
-              {chat.type !== 'dm' && (
+              {/* Participants (only for non-self chats) */}
+              {!isSelfChat && (
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-2">
                     Members ({chat.participants?.length || 0})

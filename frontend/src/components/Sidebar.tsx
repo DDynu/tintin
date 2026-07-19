@@ -13,6 +13,10 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
   const { logout, currentUser } = useAuth()
   const user = currentUser.data
 
+  // Separate self chat from regular chats, pin self chat at top
+  const selfChat = chats.find(c => c.type === 'self')
+  const regularChats = chats.filter(c => c.type !== 'self')
+
   return (
     <>
       <div className="w-72 h-full bg-bg-base border-r border-border flex flex-col shrink-0
@@ -55,7 +59,43 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
             </div>
           ) : (
             <div className="py-1">
-              {chats.map((chat) => (
+              {/* Self chat pinned at top */}
+              {selfChat && (
+                <Link
+                  key={selfChat.id}
+                  to={`/chat/${selfChat.id}`}
+                  onClick={() => onSelect(selfChat.id)}
+                  className={`group flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-150 ${
+                    selectedChatId === selfChat.id
+                      ? 'bg-bg-card border border-border'
+                      : 'hover:bg-bg-hover/50'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-secondary font-medium shrink-0">
+                    📝
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm truncate ${
+                        selectedChatId === selfChat.id ? 'text-text-primary font-medium' : 'text-text-secondary'
+                      }`}>
+                        {selfChat.name || 'My Notes'}
+                      </span>
+                      {selfChat.last_message && (
+                        <span className="text-xs text-text-dim ml-2 shrink-0">
+                          {new Date(selfChat.last_message).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-text-dim truncate mt-0.5">
+                      {selfChat.last_message || 'Your personal notes'}
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {/* Regular chats */}
+              {regularChats.map((chat) => (
                 <Link
                   key={chat.id}
                   to={`/chat/${chat.id}`}
@@ -83,7 +123,7 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
                       )}
                     </div>
                     <div className="text-xs text-text-dim truncate mt-0.5">
-                      {chat.last_message || `Type: ${chat.type}`}
+                      {chat.last_message || `Chat`}
                     </div>
                   </div>
                 </Link>
