@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { chatApi } from '../api/client'
-import { WebSocketClient } from '../api/ws'
+import { WebSocketClient, type ParticipantChangeHandler, type ChatDeletedHandler } from '../api/ws'
 import { decodeJwtPayload } from '../utils/jwt'
 import type { Message } from '../types'
 
-export function useChat(chatId: number | null) {
+export function useChat(chatId: number | null, onParticipantChange?: ParticipantChangeHandler, onChatDeleted?: ChatDeletedHandler) {
   const [messages, setMessages] = useState<Message[]>([])
   const wsClient = useRef<WebSocketClient | null>(null)
   const prevChatId = useRef<number | null>(null)
@@ -24,13 +24,15 @@ export function useChat(chatId: number | null) {
         setMessages((prev) => [...prev, msg])
       },
       () => client.joinChat(chatId),
+      onParticipantChange,
+      onChatDeleted,
     )
     client.connect()
     wsClient.current = client
     return () => {
       client.close()
     }
-  }, [chatId])
+  }, [chatId, onParticipantChange])
 
   // Get message when entering chat
   useEffect(() => {
@@ -51,5 +53,9 @@ export function useChat(chatId: number | null) {
     [wsClient, chatId],
   )
 
-  return { messages, sendMessage }
+  const clearMessages = useCallback(() => {
+    setMessages([])
+  }, [])
+
+  return { messages, sendMessage, clearMessages }
 }

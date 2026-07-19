@@ -11,6 +11,7 @@ import type { Chat, Message, User } from '../types'
 
 interface ChatViewProps {
   refreshChats?: () => void
+  onChatDeleted?: (chatId: number) => void
 }
 
 interface DateGroup {
@@ -47,11 +48,10 @@ function groupMessagesByDate(messages: Message[]): DateGroup[] {
   return groups
 }
 
-export function ChatView({ refreshChats }: ChatViewProps) {
+export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
   const { id } = useParams<{ id: string }>()
   const chatId = id ? parseInt(id) : null
   const { showSidebar, setShowSidebar } = useApp()
-  const { messages, sendMessage } = useChat(chatId)
   const [input, setInput] = useState('')
   const [chat, setChat] = useState<Chat | null>(null)
   const [showEdit, setShowEdit] = useState(false)
@@ -70,6 +70,23 @@ export function ChatView({ refreshChats }: ChatViewProps) {
       }
     })
   }, [chatId])
+
+  const onParticipantChange = useCallback((data: { chat_id: number }) => {
+    if (data.chat_id === chatId) {
+      loadChat()
+    }
+  }, [chatId, loadChat])
+
+  const onChatDeletedWrapper = useCallback(
+    (data: { chat_id: number }) => {
+      if (data.chat_id === chatId) {
+        onChatDeleted?.(data.chat_id)
+      }
+    },
+    [chatId, onChatDeleted],
+  )
+
+  const { messages, sendMessage, clearMessages } = useChat(chatId, onParticipantChange, onChatDeletedWrapper)
 
   useEffect(() => {
     loadChat()
@@ -145,20 +162,11 @@ export function ChatView({ refreshChats }: ChatViewProps) {
     if (!confirm('Clear all messages in this chat? This cannot be undone.')) return
     try {
       await chatApi.clearMessages(chatId)
-      // Refresh messages from the API
-      const msgs = await chatApi.getMessages(chatId)
-      // Clear local messages by re-fetching
-      setMessages([])
+      clearMessages()
     } catch (err) {
       console.error('Failed to clear messages:', err)
     }
   }
-
-  const [localMessages, setMessages] = useState<Message[]>([])
-  // Sync local messages with the hook's messages
-  useEffect(() => {
-    setMessages(messages)
-  }, [messages])
 
   const handleOpenEdit = () => {
     if (chat) {
