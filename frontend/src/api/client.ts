@@ -57,6 +57,10 @@ export const authApi = {
   me(): Promise<User> {
     return client.get('/auth/me').then(res => res.data)
   },
+
+  searchUsers(q: string): Promise<User[]> {
+    return client.get('/auth/users', { params: { q } }).then(res => res.data)
+  },
 }
 
 export const chatApi = {

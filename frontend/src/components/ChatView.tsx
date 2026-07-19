@@ -3,10 +3,11 @@ import { useChat } from '../hooks/useChat'
 import { chatApi } from '../api/client'
 import { decodeJwtPayload } from '../utils/jwt'
 import { MessageBubble } from './MessageBubble'
+import { UserAutocomplete } from './UserAutocomplete'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { DateSeparator } from './DateSeparator'
-import type { Chat, Message } from '../types'
+import type { Chat, Message, User } from '../types'
 
 interface ChatViewProps {
   refreshChats?: () => void
@@ -55,7 +56,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
   const [chat, setChat] = useState<Chat | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [editName, setEditName] = useState('')
-  const [newParticipant, setNewParticipant] = useState('')
+  const [newParticipants, setNewParticipants] = useState<User[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -100,12 +101,13 @@ export function ChatView({ refreshChats }: ChatViewProps) {
     }
   }
 
-  const handleAddParticipant = async () => {
-    if (!chatId || !newParticipant.trim()) return
+  const handleAddParticipants = async () => {
+    if (!chatId || newParticipants.length === 0) return
     try {
-      const updated = await chatApi.addParticipants(chatId, [newParticipant.trim()])
+      const usernames = newParticipants.map(u => u.username)
+      const updated = await chatApi.addParticipants(chatId, usernames)
       setChat(updated)
-      setNewParticipant('')
+      setNewParticipants([])
     } catch (err) {
       console.error('Failed to add participant:', err)
     }
@@ -315,21 +317,19 @@ export function ChatView({ refreshChats }: ChatViewProps) {
                     ))}
                   </div>
                   
-                  <div className="flex gap-2">
-                    <input
-                      value={newParticipant}
-                      onChange={(e) => setNewParticipant(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddParticipant()}
-                      className="flex-1 bg-bg-surface text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber/40"
-                      placeholder="Add by username"
-                    />
+                  <UserAutocomplete
+                    excludeIds={chat.participants?.map(p => p.id) || []}
+                    onSelectionChange={setNewParticipants}
+                    placeholder="Search users to add..."
+                  />
+                  {newParticipants.length > 0 && (
                     <button
-                      onClick={handleAddParticipant}
+                      onClick={handleAddParticipants}
                       className="px-4 py-2 bg-amber text-bg-base text-sm font-medium rounded-lg hover:bg-amber-glow transition-colors"
                     >
-                      Add
+                      Add Selected
                     </button>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

@@ -19,7 +19,7 @@ export function MessageBubble({ content, sender, time, isPending }: Props) {
             {isPending && <span className="text-[10px] text-text-dim italic">sending...</span>}
           </div>
           <div className="bg-bg-card border border-border rounded-2xl rounded-bl-sm px-3.5 py-2.5">
-            <p className="text-sm leading-relaxed text-text-primary break-words">{content}</p>
+            <p className="text-sm leading-relaxed text-text-primary wrap-break-word">{content}</p>
           </div>
         </div>
       </div>

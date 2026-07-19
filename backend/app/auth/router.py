@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 from app.database import get_db
 from app.models import User
 from app.auth.service import (
@@ -7,7 +8,7 @@ from app.auth.service import (
     get_user_by_username, get_user_by_email, get_current_user
 )
 from app.schemas import UserRegister, UserLogin, Token, UserOut
-from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,3 +41,22 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user)):
     return user
+
+@router.get("/users", response_model=list[UserOut])
+async def search_users(
+    q: str = Query("", alias="q"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    filtered = select(User).where(User.id != current_user.id)
+    if q.strip():
+        pattern = f"%{q.strip()}%"
+        filtered = filtered.where(
+            or_(
+                User.username.ilike(pattern),
+            )
+        )
+    result = await db.execute(
+        filtered.order_by(User.username).limit(20)
+    )
+    return result.scalars().all()

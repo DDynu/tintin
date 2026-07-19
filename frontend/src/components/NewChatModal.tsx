@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { chatApi } from '../api/client'
+import { UserAutocomplete } from './UserAutocomplete'
+import type { User } from '../types'
 
 interface Props {
   onClose: () => void
@@ -10,7 +12,7 @@ interface Props {
 export function NewChatModal({ onClose, onCreated, refresh }: Props) {
   const [name, setName] = useState('')
   const [type, setType] = useState<'dm' | 'group'>('dm')
-  const [participants, setParticipants] = useState('')
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -26,12 +28,22 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (type === 'dm' && selectedUsers.length !== 1) {
+      setError('Select exactly one user for direct message')
+      return
+    }
+    if (type === 'group' && selectedUsers.length < 2) {
+      setError('Select at least 2 users for a group chat')
+      return
+    }
+
     setLoading(true)
     try {
       await chatApi.createChat({
         type,
         name: name || null,
-        participantUsernames: participants.split(',').map(s => s.trim()).filter(Boolean),
+        participantUsernames: selectedUsers.map(u => u.username),
       })
       onCreated()
       refresh()
@@ -94,12 +106,10 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
             ))}
           </div>
 
-          <input
-            type="text"
-            value={participants}
-            onChange={(e) => setParticipants(e.target.value)}
-            className="w-full bg-bg-surface text-text-primary rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-border placeholder-text-dim"
-            placeholder={type === 'dm' ? 'Username' : 'Usernames (comma-separated)'}
+          <UserAutocomplete
+            excludeIds={[]}
+            onSelectionChange={setSelectedUsers}
+            placeholder={type === 'dm' ? 'Search user...' : 'Search users...'}
           />
 
           {error && (
