@@ -47,14 +47,13 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
       className="fixed inset-0 bg-bg-deep/60 backdrop-blur-sm flex items-center justify-center z-50 animate-overlay-fade
-        md:items-center
         md:items-center"
     >
       <form
         onSubmit={handleSubmit}
         className="bg-bg-base border border-border rounded-xl p-6 w-full max-w-sm animate-scale-in shadow-2xl
           md:rounded-xl md:animate-scale-in
-          rounded-t-2xl md:rounded-xl
+          rounded-t-2xl 
           mx-4 mb-0 md:mb-auto
           max-h-[85vh] md:max-h-none
           overflow-y-auto"
