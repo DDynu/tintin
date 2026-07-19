@@ -84,11 +84,10 @@ export function NewChatModal({ onClose, onCreated, refresh }: Props) {
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                  type === t
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${type === t
                     ? 'bg-amber text-bg-base'
                     : 'bg-bg-surface text-text-secondary hover:bg-bg-hover'
-                }`}
+                  }`}
               >
                 {t === 'dm' ? 'Direct Message' : 'Group'}
               </button>
