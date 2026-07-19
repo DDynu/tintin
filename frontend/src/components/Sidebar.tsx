@@ -34,7 +34,7 @@ export function Sidebar({ chats, selectedChatId, onSelect, isNewChat }: Props) {
           </div>
           {user && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base font-bold text-sm">
+              <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base font-bold text-sm">
                 {user.username[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

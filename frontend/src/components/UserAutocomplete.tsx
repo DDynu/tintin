@@ -146,7 +146,7 @@ export function UserAutocomplete({ onSelectionChange, excludeIds = [], placehold
                     addSelectedUser(user)
                   }}
                 >
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base text-xs font-bold shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-linear-to-br from-amber to-amber-dim flex items-center justify-center text-bg-base text-xs font-bold shrink-0">
                     {user.username[0].toUpperCase()}
                   </div>
                   <span className="text-text-primary truncate">{user.username}</span>
