@@ -222,7 +222,10 @@ export function ChatView({ refreshChats }: ChatViewProps) {
             title="Clear messages"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 5h12M6 5V3h4v2"/>
+              <path d="M8 2v5"/>
+              <path d="M7 7h2"/>
+              <path d="M5 14l3-8 3 8z"/>
+              <path d="M6 9h4"/>
             </svg>
           </button>
         )}
