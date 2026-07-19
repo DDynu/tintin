@@ -25,9 +25,10 @@ export function Auth({ isLogin }: AuthProps) {
         await register.mutateAsync({ username, email, password })
       }
       navigate('/')
-    } catch (err) {
-      console.log(err)
-      setError(isLogin ? `err: ${err}` : 'Registration failed')
+    } catch (err: unknown) {
+      console.error(err)
+      const message = err instanceof Error ? err.message : 'An error occurred'
+      setError(isLogin ? message : 'Registration failed')
     }
   }
 

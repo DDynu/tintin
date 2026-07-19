@@ -7,6 +7,9 @@ export class WebSocketClient {
   private user_id: number
   private onMessage: (msg: Message) => void
   private onConnect: () => void
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 5
 
   constructor(user_id: number, onMessage: (msg: Message) => void, onConnect: () => void) {
     this.user_id = user_id
@@ -16,7 +19,10 @@ export class WebSocketClient {
 
   connect() {
     this.ws = new WebSocket(`${WS_URL}?user_id=${this.user_id}`)
-    this.ws.onopen = () => this.onConnect()
+    this.ws.onopen = () => {
+      this.reconnectAttempts = 0
+      this.onConnect()
+    }
     this.ws.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data)
@@ -25,10 +31,30 @@ export class WebSocketClient {
         console.error('[WebSocket] Failed to parse message:', err, 'raw:', e.data)
       }
     }
+    this.ws.onerror = (err) => {
+      console.error('[WebSocket] Connection error:', err)
+    }
+    this.ws.onclose = () => {
+      console.warn('[WebSocket] Connection closed. Attempting reconnect...')
+      this.scheduleReconnect()
+    }
   }
 
-  sendMessage(chatId: number, content: string, id?: string) {
-    this.ws?.send(JSON.stringify({ type: 'message', chat_id: chatId, content, id }))
+  private scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('[WebSocket] Max reconnection attempts reached')
+      return
+    }
+    const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000)
+    this.reconnectAttempts++
+    this.reconnectTimer = setTimeout(() => {
+      console.log(`[WebSocket] Reconnecting... attempt ${this.reconnectAttempts}`)
+      this.connect()
+    }, delay)
+  }
+
+  sendMessage(chatId: number, content: string) {
+    this.ws?.send(JSON.stringify({ type: 'message', chat_id: chatId, content }))
   }
 
   joinChat(chatId: number) {
@@ -36,6 +62,10 @@ export class WebSocketClient {
   }
 
   close() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     this.ws?.close()
   }
 }

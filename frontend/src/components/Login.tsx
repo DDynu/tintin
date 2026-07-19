@@ -9,15 +9,16 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
     setError('')
     try {
       await login.mutateAsync({ username, password })
       navigate('/')
-    } catch (err) {
-      console.log(err)
-      setError("err: " + err)
+    } catch (err: unknown) {
+      console.error(err)
+      const message = err instanceof Error ? err.message : 'An error occurred'
+      setError(message)
     }
   }
 

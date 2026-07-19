@@ -1,21 +1,56 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChat } from '../hooks/useChat'
 import { chatApi } from '../api/client'
+import { decodeJwtPayload } from '../utils/jwt'
 import { MessageBubble } from './MessageBubble'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
-import type { Chat } from '../types'
+import { DateSeparator } from './DateSeparator'
+import type { Chat, Message } from '../types'
 
 interface ChatViewProps {
   refreshChats?: () => void
 }
 
+interface DateGroup {
+  date: Date
+  messages: Message[]
+}
+
+function groupMessagesByDate(messages: Message[]): DateGroup[] {
+  const groups: DateGroup[] = []
+  let currentDate: Date | null = null
+  let currentGroup: Message[] = []
+
+  for (const msg of messages) {
+    const msgDate = new Date(msg.created_at)
+    // Normalize to date-only comparison (ignore time)
+    const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`
+    const currentKey = currentDate ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}` : ''
+
+    if (dateKey !== currentKey) {
+      if (currentGroup.length > 0) {
+        groups.push({ date: currentDate!, messages: currentGroup })
+      }
+      currentDate = msgDate
+      currentGroup = [msg]
+    } else {
+      currentGroup.push(msg)
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push({ date: currentDate!, messages: currentGroup })
+  }
+
+  return groups
+}
+
 export function ChatView({ refreshChats }: ChatViewProps) {
   const { id } = useParams<{ id: string }>()
-  const chatId = id ? parseInt(id) : 0
+  const chatId = id ? parseInt(id) : null
   const { showSidebar, setShowSidebar } = useApp()
   const { messages, sendMessage } = useChat(chatId)
-  const [pendingIds, setPendingIds] = useState<Set<number | void>>(new Set())
   const [input, setInput] = useState('')
   const [chat, setChat] = useState<Chat | null>(null)
   const [showEdit, setShowEdit] = useState(false)
@@ -50,15 +85,8 @@ export function ChatView({ refreshChats }: ChatViewProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    const msgId = Math.floor(Math.random() * 1e9)
-    setPendingIds(prev => new Set(prev).add(msgId))
-    sendMessage(input, String(msgId)) // Hopefully message got sent, no ack for now
+    sendMessage(input)
     setInput('')
-    setPendingIds(prev => {
-      const nextSet = new Set(prev)
-      nextSet.delete(msgId)
-      return nextSet
-    }) // delete the pending after message is sent
   }
 
   const handleUpdateName = async () => {
@@ -93,18 +121,7 @@ export function ChatView({ refreshChats }: ChatViewProps) {
     }
   }
 
-  function decodeJwtPayload(token: string) {
-    const parts = token.split('.')
-    if (parts.length < 2) return {}
-    const base64url = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    const padded = base64url + '='.repeat((4 - (base64url.length % 4)) % 4)
-    try {
-      return JSON.parse(atob(padded))
-    } catch {
-      return {}
-    }
-  }
-  const currentUserId = parseInt(decodeJwtPayload(localStorage.getItem('token') || '').sub || '0')
+  const currentUserId = parseInt(decodeJwtPayload(localStorage.getItem('token') || '').sub || '0') || 0
   const isOwner = chat?.owner_id === currentUserId
 
   const navigate = useNavigate()
@@ -196,17 +213,21 @@ export function ChatView({ refreshChats }: ChatViewProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                content={msg.content}
-                sender={msg.sender?.username ?? 'Unknown'}
-                time={new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-                isPending={pendingIds.has(msg.id)}
-              />
+            {groupMessagesByDate(messages).map((group, groupIndex) => (
+              <div key={groupIndex} className="space-y-3">
+                <DateSeparator date={group.date} />
+                {group.messages.map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    content={msg.content}
+                    sender={msg.sender?.username ?? 'Unknown'}
+                    time={new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}
