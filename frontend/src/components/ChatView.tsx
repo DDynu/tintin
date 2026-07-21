@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChat } from '../hooks/useChat'
 import { chatApi } from '../api/client'
 import { decodeJwtPayload } from '../utils/jwt'
+import toLocalTimeZone from '../utils/toLocalTimeZone'
 import { MessageBubble } from './MessageBubble'
 import { UserAutocomplete } from './UserAutocomplete'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -25,7 +26,7 @@ function groupMessagesByDate(messages: Message[]): DateGroup[] {
   let currentGroup: Message[] = []
 
   for (const msg of messages) {
-    const msgDate = new Date(msg.created_at)
+    const msgDate = toLocalTimeZone(new Date(msg.created_at))
     // Normalize to date-only comparison (ignore time)
     const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`
     const currentKey = currentDate ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}` : ''
@@ -35,7 +36,7 @@ function groupMessagesByDate(messages: Message[]): DateGroup[] {
         groups.push({ date: currentDate!, messages: currentGroup })
       }
       currentDate = msgDate
-      currentGroup = [msg]
+      currentGroup = [msg] // group for messages
     } else {
       currentGroup.push(msg)
     }
@@ -269,12 +270,12 @@ export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
             {groupMessagesByDate(messages).map((group, groupIndex) => (
               <div key={groupIndex} className="space-y-3">
                 <DateSeparator date={group.date} />
-                {group.messages.map((msg) => (
+                {group.messages.map((msg, index) => (
                   <MessageBubble
                     key={msg.id}
                     content={msg.content}
                     sender={msg.sender?.username ?? 'Unknown'}
-                    time={new Date(msg.created_at).toLocaleTimeString([], {
+                    time={toLocalTimeZone(new Date(msg.created_at)).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
