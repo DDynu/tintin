@@ -270,7 +270,7 @@ export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
             {groupMessagesByDate(messages).map((group, groupIndex) => (
               <div key={groupIndex} className="space-y-3">
                 <DateSeparator date={group.date} />
-                {group.messages.map((msg, index) => (
+                {group.messages.map((msg) => (
                   <MessageBubble
                     key={msg.id}
                     content={msg.content}
