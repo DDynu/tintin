@@ -15,7 +15,16 @@ export function useChat(chatId: number | null, onParticipantChange?: Participant
     const token = localStorage.getItem('token')
     if (!token || !chatId) return
 
-    const userId = parseInt(decodeJwtPayload(token).sub || '0')
+    const payload = decodeJwtPayload(token)
+    if (Object.keys(payload).length === 0 || !payload.sub) {
+      console.error('[useChat] Failed to decode JWT payload, cannot determine user ID')
+      return
+    }
+    const userId = parseInt(payload.sub)
+    if (isNaN(userId) || userId <= 0) {
+      console.error('[useChat] Invalid user ID from JWT payload:', payload.sub)
+      return
+    }
     const client = new WebSocketClient(
       userId,
       (msg) => {

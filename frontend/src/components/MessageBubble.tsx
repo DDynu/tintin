@@ -9,7 +9,9 @@ export function MessageBubble({ content, sender, time, isPending }: Props) {
   return (
     <div className="animate-fade-in group">
       <div className="flex items-end gap-2.5 max-w-[85%] md:max-w-xl">
-        <div className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-[10px] text-text-dim shrink-0">
+        <div className="w-6 h-6 rounded-full 
+        bg-bg-card border border-border flex items-center justify-center text-[10px] 
+        text-text-dim shrink-0">
           {sender[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
@@ -18,7 +20,8 @@ export function MessageBubble({ content, sender, time, isPending }: Props) {
             <span className="text-[10px] text-text-dim">{time}</span>
             {isPending && <span className="text-[10px] text-text-dim italic">sending...</span>}
           </div>
-          <div className="bg-bg-card border border-border rounded-2xl rounded-bl-sm px-3.5 py-2.5">
+          <div className="bg-bg-card border border-border rounded-2xl 
+          rounded-bl-sm px-3.5 py-2.5">
             <p className="text-sm leading-relaxed text-text-primary wrap-break-word">{content}</p>
           </div>
         </div>

@@ -47,6 +47,22 @@ async def get_messages(chat_id: int, db: AsyncSession = Depends(get_db), user: U
 @router.post("/{chat_id}/messages")
 async def post_message(chat_id: int, data: MessageCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     msg = await send_message(db, chat_id, user.id, data.content)
+    # Broadcast via WebSocket so connected clients see the message in real-time
+    # This prevents stale state if the API is ever used to send messages instead of WS
+    await manager.broadcast(chat_id, {
+        "type": "message",
+        "message": {
+            "id": msg.id,
+            "sender": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "created_at": user.created_at.isoformat(),
+            },
+            "content": msg.content,
+            "created_at": msg.created_at.isoformat(),
+        },
+    })
     return TypeAdapter(MessageOut).dump_python(msg)
 
 @router.delete("/{chat_id}/messages", status_code=204)
