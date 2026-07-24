@@ -58,6 +58,7 @@ export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
   const [showEdit, setShowEdit] = useState(false)
   const [editName, setEditName] = useState('')
   const [newParticipants, setNewParticipants] = useState<User[]>([])
+  const [participantResetKey, setParticipantResetKey] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -126,6 +127,8 @@ export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
       const updated = await chatApi.addParticipants(chatId, usernames)
       setChat(updated)
       setNewParticipants([])
+      // Force UserAutocomplete to remount with empty internal state
+      setParticipantResetKey(k => k + 1)
     } catch (err) {
       console.error('Failed to add participant:', err)
     }
@@ -370,6 +373,7 @@ export function ChatView({ refreshChats, onChatDeleted }: ChatViewProps) {
                   </div>
                   
                   <UserAutocomplete
+                    key={participantResetKey}
                     excludeIds={chat.participants?.map(p => p.id) || []}
                     onSelectionChange={setNewParticipants}
                     placeholder="Search users to add..."
