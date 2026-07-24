@@ -9,6 +9,11 @@ CHAT_TYPE_SELF = "self"
 
 
 async def create_chat(db: AsyncSession, owner_id: int, name: str | None, participant_usernames: list[str]):
+    import logging
+    logging.getLogger(__name__).info(
+        "create_chat: owner_id=%s name=%s participant_usernames=%s",
+        owner_id, name, participant_usernames,
+    )
     chat = Chat(type=CHAT_TYPE_CHAT, name=name, owner_id=owner_id)
     db.add(chat)
     await db.flush()

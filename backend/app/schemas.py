@@ -36,7 +36,9 @@ class FriendshipOut(BaseModel):
 
 class ChatCreate(BaseModel):
     name: Optional[str] = None
-    participant_usernames: List[str] = []
+    participant_usernames: List[str] = Field(default=[], alias="participantUsernames")
+
+    model_config = {"populate_by_name": True}
 
 class ChatOut(BaseModel):
     id: int
